@@ -36,4 +36,4 @@ The process involves three workflows:
 
 **Authentication**
 
-OIDC Authentication is used to authenticate with Cloudsmith.
+OIDC Authentication must be used for the project, API Key solutions will be rejected.
