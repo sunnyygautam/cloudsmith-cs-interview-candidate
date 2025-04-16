@@ -16,7 +16,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    outputs:
+      artifact_name: ${{ steps.set-artifact-name.outputs.artifact_name }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,3 +43,8 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 5
+
+      - name: Set artifact name output
+        id: set-artifact-name
+        run: echo "artifact_name=python-package" >> $GITHUB_OUTPUT
+
