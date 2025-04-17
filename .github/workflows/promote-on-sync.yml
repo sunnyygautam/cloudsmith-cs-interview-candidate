@@ -1,0 +1,49 @@
+name: Promote Python Package On Sync
+
+on:
+  repository_dispatch:
+    types: [package_synchronized]
+
+env:
+  CLOUDSMITH_NAMESPACE: ${{ vars.CLOUDSMITH_NAMESPACE }}
+  CLOUDSMITH_STAGING_REPO: 'staging'
+  CLOUDSMITH_PRODUCTION_REPO: 'production'
+  CLOUDSMITH_SERVICE_SLUG: ${{ vars.CLOUDSMITH_SERVICE_SLUG }}
+  PACKAGE_NAME: 'example_package'
+
+permissions:
+  id-token: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Cloudsmith CLI
+        uses: cloudsmith-io/cloudsmith-cli-action@v1.0.1
+        with:
+          oidc-namespace: ${{ env.CLOUDSMITH_NAMESPACE }}
+          oidc-service-slug: ${{ env.CLOUDSMITH_SERVICE_SLUG }}
+
+      - name: Get package identifier and promote
+        run: |
+          PACKAGE_VERSION="${{ github.event.client_payload.version }}"
+          PACKAGE_QUERY="filename:${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.gz"
+          echo "Promoting package: $PACKAGE_QUERY"
+          
+          PACKAGE_DATA=$(cloudsmith list package ${{ env.CLOUDSMITH_NAMESPACE }}/${{ env.CLOUDSMITH_STAGING_REPO }} -q "$PACKAGE_QUERY" -F json)
+          
+          IDENTIFIER=$(echo "$PACKAGE_DATA" | jq -r '.data[0].identifier_perm')
+          
+          if [ -z "$IDENTIFIER" ] || [ "$IDENTIFIER" = "null" ]; then
+            echo "Failed to find package identifier"
+            exit 1
+          fi
+          
+          echo "Found package identifier: $IDENTIFIER"
+          
+          cloudsmith mv --yes \
+            ${{ env.CLOUDSMITH_NAMESPACE }}/${{ env.CLOUDSMITH_STAGING_REPO }}/$IDENTIFIER \
+            ${{ env.CLOUDSMITH_PRODUCTION_REPO }}
+        shell: bash
+
