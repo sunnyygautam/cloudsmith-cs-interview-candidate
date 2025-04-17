@@ -1,0 +1,16 @@
+name: Promote Package On Webhook
+
+on:
+  repository_dispatch:
+    types: [package_pushed]
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # your promote logic here
+
